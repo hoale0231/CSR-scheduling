@@ -1,16 +1,16 @@
 from docplex.mp.model import Model
-from typing import List
+from typing import List, Tuple
 
 from utils import add_pad_schedule, check_requires_constraint_all_day
 from data import REQUIRES, SHIFTS, WEEK
 
-def CSR_required_one_day(requires_day: List[int]) -> List[int]:
+def schedule_one_day(requires_day: List[int]) -> List[int]:
     """
-    How many CSR is required in a day?
+    Schedule one day with a minimum number CSRs
     Input:
         requires: a row in REQUIRES in data.py
     Output:
-        day_result: list of shift index
+        day_schedule: list of shift index
     """
     num_time_period = len(requires_day)
     num_shifts = len(SHIFTS)
@@ -34,29 +34,30 @@ def CSR_required_one_day(requires_day: List[int]) -> List[int]:
     # Solve the model
     model.solve()
     
-    result = []
+    day_schedule = []
     for k in range(num_shifts):
         n_csr = int(model.solution.get_value(x[k]))
         if n_csr > 0: 
-            result += [k] * n_csr
+            day_schedule += [k] * n_csr
             
-    return result
+    return day_schedule
 
-def CSR_required_each_day(week_requires: List[List[int]]) -> List[List[int]]:
+def CSR_required_each_day(week_requires: List[List[int]]) -> Tuple[List[int], List[List[int]]]:
     """
-    How many CSR is required in each day?
+    How many CSRs are required each day? and corresponding schedule
     Input:
         requires: REQUIRES in data.py
     Output:
-        result: list of day_result
+        num_csr_each_day: [int] * 7
+        week_schedule: list of day_schedule
     """
     # cplex solution
-    week_result = add_pad_schedule([
-        CSR_required_one_day(requires) for requires in week_requires
-    ])
-
+    week_schedule = [
+        schedule_one_day(requires) for requires in week_requires
+    ]
+    
     # Sample solution
-    # week_result = add_pad_schedule([
+    # week_schedule = [
     #     [1, 1, 1, 2, 2, 2, 3, 3, 3, 6, 6, 6],
     #     [1, 1, 1, 2, 2, 2, 3, 3, 3, 6, 6, 6, 6],
     #     [1, 1, 1, 1, 2, 2, 3, 5, 5, 6, 6, 6],
@@ -64,12 +65,15 @@ def CSR_required_each_day(week_requires: List[List[int]]) -> List[List[int]]:
     #     [1, 1, 1, 2, 3, 3, 4, 6, 6, 6],
     #     [1, 1, 1, 2, 2, 2, 3, 5, 5, 6, 6, 6],
     #     [1, 1, 2, 2, 3, 3, 5, 5, 6, 6, 6]
-    # ])
+    # ]
     
-    return check_requires_constraint_all_day(week_result, week_requires)
+    num_csr_each_day = [len(day_schedule) for day_schedule in week_schedule]
+    week_schedule = check_requires_constraint_all_day(week_schedule, week_requires)
+    return num_csr_each_day, week_schedule
 
 if __name__ == '__main__':
-    week_result = CSR_required_each_day(REQUIRES)
-    for day, day_result in zip(WEEK, week_result):
-        print(f"{day} need {sum(map(lambda x: x != 0, day_result))}, schedule: {day_result}")
+    num_csr_each_day, week_schedule = CSR_required_each_day(REQUIRES)
+    week_schedule = add_pad_schedule(week_schedule)
+    for day, n_csr, day_schedule in zip(WEEK, num_csr_each_day, week_schedule):
+        print(f"{day} need {n_csr}, schedule: {day_schedule}")
 
