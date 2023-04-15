@@ -1,5 +1,7 @@
-from data import REQUIRES, SHIFTS, WEEK
+from docplex.mp.model import Model
 from typing import List
+
+from data import REQUIRES, SHIFTS, WEEK
 
 def CSR_required_a_day(requires_day: List[int]) -> List[int]:
     """
@@ -10,8 +12,35 @@ def CSR_required_a_day(requires_day: List[int]) -> List[int]:
     Output:
         day_result: list of shift index
     """
-    pass
+    num_time_period = len(requires_day)
+    num_shifts = len(SHIFTS)
 
+    # Create the optimization model
+    model = Model(name='CSR Scheduling')
+
+    # Define the decision variables
+    x = {
+        k: model.integer_var(lb=0, ub=max(requires_day), name=f"x_{k}")
+        for k in range(num_shifts)
+    }
+
+    # Define the objective function
+    model.minimize(model.sum(x[k] for k in range(num_shifts)))
+
+    # Define the constraints
+    for t in range(num_time_period):
+        model.add_constraint(model.sum(x[k] * SHIFTS[k][t] for k in range(num_shifts)) >= requires_day[t])
+        
+    # Solve the model
+    model.solve()
+    
+    result = []
+    
+    for k in range(num_shifts):
+        n_csr = int(model.solution.get_value(x[k]))
+        if n_csr > 0: 
+            result += [k] * n_csr
+    return result
 
 def CSR_required_all_day(week_requires: List[List[int]]) -> List[List[int]]:
     """
@@ -22,16 +51,6 @@ def CSR_required_all_day(week_requires: List[List[int]]) -> List[List[int]]:
     Output:
         result: list of day_result
     """
-    return [
-        [1, 1, 1, 2, 2, 2, 3, 3, 3, 6, 6, 6],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3, 6, 6, 6, 6],
-        [1, 1, 1, 1, 2, 2, 3, 5, 5, 6, 6, 6],
-        [1, 1, 1, 1, 2, 2, 2, 3, 3, 5, 5, 6, 6],
-        [1, 1, 1, 2, 3, 3, 4, 6, 6, 6],
-        [1, 1, 1, 2, 2, 2, 3, 5, 5, 6, 6, 6],
-        [1, 1, 2, 2, 3, 3, 5, 5, 6, 6, 6]
-    ]
-    
     return [
         CSR_required_a_day(requires) for requires in week_requires
     ]
