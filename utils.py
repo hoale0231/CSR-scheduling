@@ -1,3 +1,4 @@
+import copy
 from typing import List
 from data import SHIFTS, WEEK, MINIMUM_DAY_OFF
 
@@ -15,6 +16,7 @@ def check_requires_constraint_one_day(day_schedule: List[int], day_requires: Lis
         day_schedule: list of shift index
         requires: a row in REQUIRES in data.py
     """
+    day_requires = copy.deepcopy(day_requires)
     for k in day_schedule:
         for t, s_kt in enumerate(SHIFTS[k]):
             if s_kt == 1:
