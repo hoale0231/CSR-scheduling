@@ -1,5 +1,5 @@
 from typing import List
-from data import SHIFTS, WEEK
+from data import SHIFTS, WEEK, MINIMUM_DAY_OFF
 
 def add_pad_schedule(schedule: List[List[int]]) -> List[List[int]]:
     num_csr = max([len(day) for day in schedule])
@@ -50,9 +50,9 @@ def check_maximum_onboard_day_constraint(week_schedule: List[List[int]]):
         for csr, shift in enumerate(day_schedule):
             if shift != 0:
                 day_work_of_csr[csr] += 1
-    if any([day_work > 6 for day_work in day_work_of_csr]):
+    if any([day_work > (len(WEEK) - MINIMUM_DAY_OFF) for day_work in day_work_of_csr]):
         str_week_schedule = ""
         for day, day_schedule in zip(WEEK, week_schedule):
            str_week_schedule += f"{day}: {day_schedule}\n"
-        raise Exception(f"Have a CSR work more than 6 days: {day_work_of_csr}\nSchedule:\n{str_week_schedule}FAIL!!")
+        raise Exception(f"Have a CSR work more than {len(WEEK) - MINIMUM_DAY_OFF} days: {day_work_of_csr}\nSchedule:\n{str_week_schedule}FAIL!!")
     return week_schedule

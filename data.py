@@ -18,3 +18,5 @@ SHIFTS = [
 ] 
 
 WEEK = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+MINIMUM_DAY_OFF = 2
