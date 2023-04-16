@@ -3,22 +3,14 @@ from typing import List, Tuple
 import math
 
 from q2 import CSR_required_week
-from data import REQUIRES, WEEK, MINIMUM_DAY_OFF, SHIFTS
+from data import REQUIRES, WEEK, SHIFTS
 from utils import check_requires_constraint_all_day, check_maximum_onboard_day_constraint, add_pad_schedule
 
 def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[List[int]]]:
-    """
-        n_ck
-        nc      17
-        nd      6
-        skt     shifts list
-        djt     requires list
-    """
     # number of csr required in week
-    num_csr, num_csr_each_day, week_schedule = CSR_required_week(week_requires)
+    num_csr, _, week_schedule = CSR_required_week(week_requires)
     
     # number of work day in week
-    # print(week_requires)
     num_workday = len(week_requires)
     num_shifts = len(SHIFTS)
 
@@ -80,9 +72,7 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
     return schedule
 
 if __name__ == '__main__':
-
     week_schedule = CSR_schedule(REQUIRES)
-
     week_schedule = add_pad_schedule(week_schedule)
     for day, day_schedule in zip(WEEK, week_schedule):
         print(f"{day}, schedule: {day_schedule}")
