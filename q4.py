@@ -3,7 +3,7 @@ from typing import List, Tuple
 import math
 
 from q2 import CSR_required_week
-from data import REQUIRES, WEEK, SHIFTS, MINIMUM_DAY_OFF
+from data import REQUIRES, WEEK, SHIFTS
 from utils import check_requires_constraint_all_day, check_maximum_onboard_day_constraint, add_pad_schedule
 
 def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[List[int]]]:
@@ -36,7 +36,7 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
     # (8)
     for i in range(num_csr):
         sum_ij = model.sum(x[i,j,k] for k in range(num_shifts) for j in range(num_workday))
-        model.add_constraint(sum_ij <= num_workday-MINIMUM_DAY_OFF)
+        model.add_constraint(sum_ij <= num_workday-1)
     
     # (9)
     for j in range(num_workday):
@@ -49,7 +49,7 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
     ncks = [0] * num_shifts
     for day in week_schedule:
         for shift in day:
-            ncks[shift] += 1            
+            ncks[shift] += 1
 
     for k in range(num_shifts):
         if k == 0:
@@ -58,6 +58,19 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
             sum_j = model.sum(x[i,j,k] for j in range(num_workday))
             model.add_constraint(math.floor(ncks[k] / num_csr) <= sum_j)
             model.add_constraint(sum_j <= math.ceil(ncks[k] / num_csr))
+            
+    # Week-end constraints
+    num_work_weekend = 0
+    for day in week_schedule[-2:]:
+        for shift in day:
+            if shift != 0:
+                num_work_weekend += 1
+    
+    for i in range(num_csr):
+        sum_j = model.sum(x[i,j,k] for j in [5,6] for k in range(num_shifts))
+        # print(i, math.floor(num_work_weekend / num_csr), math.ceil(num_work_weekend / num_csr), sum_j)
+        model.add_constraint(math.floor(num_work_weekend / num_csr) <= sum_j)
+        model.add_constraint(sum_j <= math.ceil(num_work_weekend / num_csr))
 
     model.solve()
     schedule = [[0] * num_csr for i in range(7)]
