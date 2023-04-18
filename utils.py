@@ -58,3 +58,47 @@ def check_maximum_onboard_day_constraint(week_schedule: List[List[int]]):
            str_week_schedule += f"{day}: {day_schedule}\n"
         raise Exception(f"Have a CSR work more than {len(WEEK) - MINIMUM_DAY_OFF} days: {day_work_of_csr}\nSchedule:\n{str_week_schedule}FAIL!!")
     return week_schedule
+
+def check_fair_scheduling(week_schedule: List[List[int]]):
+    shift_min = [7] * len(SHIFTS)
+    shift_max = [0] * len(SHIFTS)
+    
+    for i in range(len(week_schedule[0])):
+        count_k = dict()
+        for j in range(len(week_schedule)):
+            k = week_schedule[j][i] 
+            count_k[k] = count_k.get(k, 0) + 1
+            
+        for k, v in count_k.items():
+            shift_min[k] = min(shift_min[k], v)
+            shift_max[k] = max(shift_max[k], v)
+
+    for k, (min_, max_) in enumerate(zip(shift_min, shift_max)):
+        if max_ - min_ > 1:
+            str_week_schedule = ""
+            for day, day_schedule in zip(WEEK, week_schedule):
+                str_week_schedule += f"{day}: {day_schedule}\n"
+            raise Exception(f"{k} not fair, max={max_} min={min_}\nSchedule:\n{str_week_schedule}FAIL!!")
+        
+    return week_schedule
+
+def check_fair_weekend_scheduling(week_schedule: List[List[int]]):
+    weekend_min = 2
+    weekend_max = 0
+    
+    for i in range(len(week_schedule[0])):
+        count_0 = 0
+        for j in [5, 6]:
+            k = week_schedule[j][i] 
+            count_0 += k == 0
+        weekend_min = min(count_0, weekend_min)
+        weekend_max = max(count_0, weekend_max)
+
+
+    if weekend_max - weekend_min > 1:
+        str_week_schedule = ""
+        for day, day_schedule in zip(WEEK, week_schedule):
+            str_week_schedule += f"{day}: {day_schedule}\n"
+        raise Exception(f"weekend not fair, max={weekend_max} min={weekend_min}\nSchedule:\n{str_week_schedule}FAIL!!")
+        
+    return week_schedule
