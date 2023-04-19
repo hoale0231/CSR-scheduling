@@ -4,7 +4,7 @@ import math
 
 from q2 import CSR_required_week
 from data import REQUIRES, WEEK, SHIFTS, MINIMUM_DAY_OFF
-from utils import check_requires_constraint_all_day, check_maximum_onboard_day_constraint, add_pad_schedule
+from utils import *
 
 def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[List[int]]]:
     # number of csr required in week
@@ -24,18 +24,18 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
         x[i,j,k] = model.binary_var(name=('x_' + str(i) + '_' + str(j)+ '_' + str(k)))
 
     # Define the objective function
-    model.minimize(model.sum(x[i,j,k] for i in range(num_csr) for j in range(num_workday) for k in range(num_shifts)))
+    model.minimize(model.sum(x[i,j,k] for i in range(num_csr) for j in range(num_workday) for k in range(1, num_shifts)))
 
     # Define the constraints
     # (7)
     for i in range(num_csr):
         for j in range(num_workday):
             sum_k = model.sum(x[i,j,k] for k in range(num_shifts))
-            model.add_constraint(sum_k <= 1)
+            model.add_constraint(sum_k == 1)
     
     # (8)
     for i in range(num_csr):
-        sum_ij = model.sum(x[i,j,k] for k in range(num_shifts) for j in range(num_workday))
+        sum_ij = model.sum(x[i,j,k] for k in range(1, num_shifts) for j in range(num_workday))
         model.add_constraint(sum_ij <= num_workday-MINIMUM_DAY_OFF)
     
     # (9)
@@ -49,17 +49,16 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
     ncks = [0] * num_shifts
     for day in week_schedule:
         for shift in day:
-            ncks[shift] += 1            
+            ncks[shift] += 1
 
     for k in range(num_shifts):
-        if k == 0:
-            continue
         for i in range(num_csr):
             sum_j = model.sum(x[i,j,k] for j in range(num_workday))
             model.add_constraint(math.floor(ncks[k] / num_csr) <= sum_j)
             model.add_constraint(sum_j <= math.ceil(ncks[k] / num_csr))
 
     model.solve()
+    
     schedule = [[0] * num_csr for i in range(7)]
     for j in range(num_workday):
         for i in range(num_csr):
@@ -69,6 +68,7 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
                     schedule[j][i] = k
     schedule = check_maximum_onboard_day_constraint(schedule)
     schedule = check_requires_constraint_all_day(schedule, week_requires)
+    schedule = check_fair_scheduling(schedule)
     return schedule
 
 if __name__ == '__main__':

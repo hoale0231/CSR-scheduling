@@ -1,6 +1,7 @@
 from pulp import *
 from typing import List, Tuple
 import math
+from time import time
 
 from q2 import CSR_required_week
 from data import REQUIRES, WEEK, SHIFTS, MINIMUM_DAY_OFF
@@ -20,19 +21,19 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
     x = LpVariable.dicts('x', NM, 0, 1, LpBinary)
 
     # Define the objective function
-    model += lpSum(x[(i,j,k)] for i in range(num_csr) for j in range(num_workday) for k in range(num_shifts))
+    model += lpSum(x[(i,j,k)] for i in range(num_csr) for j in range(num_workday) for k in range(1, num_shifts))
 
     # Define the constraints
     # (7)
     for i in range(num_csr):
         for j in range(num_workday):
             sum_k = lpSum(x[(i,j,k)] for k in range(num_shifts))
-            model += sum_k <= 1
+            model += sum_k == 1
 
     # (8)
     for i in range(num_csr):
-        sum_ij = lpSum(x[(i,j,k)] for k in range(num_shifts) for j in range(num_workday))
-        model += sum_ij <= num_workday-MINIMUM_DAY_OFF
+        sum_ij = lpSum(x[(i,j,k)] for k in range(1, num_shifts) for j in range(num_workday))
+        model += sum_ij <= num_workday - MINIMUM_DAY_OFF
 
     # (9)
     for j in range(num_workday):
@@ -48,15 +49,22 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
             ncks[shift] += 1            
 
     for k in range(num_shifts):
-        if k == 0:
-            continue
         for i in range(num_csr):
             sum_j = lpSum(x[(i,j,k)] for j in range(num_workday))
             model += math.floor(ncks[k] / num_csr) <= sum_j
             model += sum_j <= math.ceil(ncks[k] / num_csr)
 
+    start = time()
     model.solve(PULP_CBC_CMD(msg=False))
+    end = time()
     
+    if model.status == LpStatusOptimal:
+        print(f"Optimal solution found in {round(end - start, 2)} s")
+    elif model.status == LpStatusInfeasible:
+        raise Exception("Problem is infeasible")
+    else:
+        raise Exception("Problem status: ", LpStatus[model.status])
+        
     schedule = [[0] * num_csr for _ in range(7)]
     for j in range(num_workday):
         for i in range(num_csr):
