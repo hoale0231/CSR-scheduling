@@ -30,16 +30,16 @@ def schedule_one_day(requires_day: List[int]) -> List[int]:
     # Define the constraints
     for t in range(num_time_period):
         model.add_constraint(model.sum(x[k] * SHIFTS[k][t] for k in range(num_shifts)) >= requires_day[t])
-        
+
     # Solve the model
     model.solve()
-    
+
     day_schedule = []
     for k in range(num_shifts):
         n_csr = int(model.solution.get_value(x[k]))
-        if n_csr > 0: 
+        if n_csr > 0:
             day_schedule += [k] * n_csr
-            
+
     return day_schedule
 
 def CSR_required_each_day(week_requires: List[List[int]]) -> Tuple[List[int], List[List[int]]]:
@@ -55,7 +55,7 @@ def CSR_required_each_day(week_requires: List[List[int]]) -> Tuple[List[int], Li
     week_schedule = [
         schedule_one_day(requires) for requires in week_requires
     ]
-    
+
     # Sample solution
     # week_schedule = [
     #     [1, 1, 1, 2, 2, 2, 3, 3, 3, 6, 6, 6],
@@ -66,7 +66,7 @@ def CSR_required_each_day(week_requires: List[List[int]]) -> Tuple[List[int], Li
     #     [1, 1, 1, 2, 2, 2, 3, 5, 5, 6, 6, 6],
     #     [1, 1, 2, 2, 3, 3, 5, 5, 6, 6, 6]
     # ]
-    
+
     num_csr_each_day = [len(day_schedule) for day_schedule in week_schedule]
     week_schedule = check_requires_constraint_all_day(week_schedule, week_requires)
     return num_csr_each_day, week_schedule

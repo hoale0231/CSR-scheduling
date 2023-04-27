@@ -4,7 +4,9 @@ from typing import List, Tuple
 from utils import add_pad_schedule, check_requires_constraint_all_day
 from data import REQUIRES, SHIFTS, WEEK
 
-def schedule_one_day(requires_day: List[int]) -> List[int]:
+
+
+def schedule_one_day(requires_day: List[int], shifts: List[List[int]]) -> List[int]:
     """
     Schedule one day with a minimum number CSRs
     Input:
@@ -13,12 +15,12 @@ def schedule_one_day(requires_day: List[int]) -> List[int]:
         day_schedule: list of shift index
     """
     num_time_period = len(requires_day)
-    num_shifts = len(SHIFTS)
+    num_shifts = len(shifts)
 
     # Create the optimization model
     model = LpProblem(name='CSR_Scheduling', sense=LpMinimize)
 
-    # Define the decision variables    
+    # Define the decision variables
     x = LpVariable.dicts('x', [k for k in range(num_shifts)], 0, max(requires_day), LpInteger)
 
     # Define the objective function
@@ -26,20 +28,20 @@ def schedule_one_day(requires_day: List[int]) -> List[int]:
 
     # Define the constraints
     for t in range(num_time_period):
-        model += lpSum(x[k] * SHIFTS[k][t] for k in range(num_shifts)) >= requires_day[t]
+        model += lpSum(x[k] * shifts[k][t] for k in range(num_shifts)) >= requires_day[t]
 
     # Solve the model
     model.solve(PULP_CBC_CMD(msg=False))
-    
+
     day_schedule = []
     for k in range(num_shifts):
         n_csr = int(x[k].value())
-        if n_csr > 0: 
+        if n_csr > 0:
             day_schedule += [k] * n_csr
-            
+
     return day_schedule
 
-def CSR_required_each_day(week_requires: List[List[int]]) -> Tuple[List[int], List[List[int]]]:
+def CSR_required_each_day(week_requires: List[List[int]], shifts: List[List[int]] = SHIFTS) -> Tuple[List[int], List[List[int]]]:
     """
     How many CSRs are required each day? and corresponding schedule
     Input:
@@ -50,9 +52,9 @@ def CSR_required_each_day(week_requires: List[List[int]]) -> Tuple[List[int], Li
     """
     # cplex solution
     week_schedule = [
-        schedule_one_day(requires) for requires in week_requires
+        schedule_one_day(requires, shifts) for requires in week_requires
     ]
-    
+
     # Sample solution
     # week_schedule = [
     #     [1, 1, 1, 2, 2, 2, 3, 3, 3, 6, 6, 6],
@@ -63,9 +65,9 @@ def CSR_required_each_day(week_requires: List[List[int]]) -> Tuple[List[int], Li
     #     [1, 1, 1, 2, 2, 2, 3, 5, 5, 6, 6, 6],
     #     [1, 1, 2, 2, 3, 3, 5, 5, 6, 6, 6]
     # ]
-    
+
     num_csr_each_day = [len(day_schedule) for day_schedule in week_schedule]
-    week_schedule = check_requires_constraint_all_day(week_schedule, week_requires)
+    week_schedule = check_requires_constraint_all_day(week_schedule, week_requires, shifts)
     return num_csr_each_day, week_schedule
 
 if __name__ == '__main__':
