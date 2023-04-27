@@ -3,11 +3,11 @@ from typing import List, Tuple
 import math
 from time import time
 
-from q2 import CSR_required_week
+from pulp_solve.q2 import CSR_required_week
 from data import REQUIRES, WEEK, SHIFTS, MINIMUM_DAY_OFF
 from utils import *
 
-def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[List[int]]]:
+def CSR_schedule(week_requires: List[List[int]], shifts: List[List[int]]) -> Tuple[int, List[int], List[List[int]]]:
     # number of csr required in week
     num_csr, _, week_schedule = CSR_required_week(week_requires)
     num_workday = len(week_requires)
@@ -46,7 +46,7 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
     ncks = [0] * num_shifts
     for day in week_schedule:
         for shift in day:
-            ncks[shift] += 1            
+            ncks[shift] += 1
 
     for k in range(num_shifts):
         for i in range(num_csr):
@@ -57,14 +57,14 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
     start = time()
     model.solve(PULP_CBC_CMD(msg=False))
     end = time()
-    
+
     if model.status == LpStatusOptimal:
         print(f"Optimal solution found in {round(end - start, 2)} s")
     elif model.status == LpStatusInfeasible:
         raise Exception("Problem is infeasible")
     else:
         raise Exception("Problem status: ", LpStatus[model.status])
-        
+
     schedule = [[0] * num_csr for _ in range(7)]
     for j in range(num_workday):
         for i in range(num_csr):
@@ -73,8 +73,9 @@ def CSR_schedule(week_requires: List[List[int]]) -> Tuple[int, List[int], List[L
                 if value == 1:
                     schedule[j][i] = k
     schedule = check_maximum_onboard_day_constraint(schedule)
-    schedule = check_requires_constraint_all_day(schedule, week_requires)
+    schedule = check_requires_constraint_all_day(schedule, week_requires, shifts)
     schedule = check_fair_scheduling(schedule)
+    print(schedule)
     return schedule
 
 if __name__ == '__main__':
