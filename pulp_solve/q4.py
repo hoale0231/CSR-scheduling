@@ -1,18 +1,25 @@
+import sys
+import os
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+
 from pulp import *
 from typing import List, Tuple
 import math
-from time import time
+from time import time, process_time
 
 from pulp_solve.q2 import CSR_required_week
 from data import REQUIRES, WEEK, SHIFTS, MINIMUM_DAY_OFF
 from utils import *
 
-def CSR_schedule(week_requires: List[List[int]], shifts: List[List[int]]) -> Tuple[int, List[int], List[List[int]]]:
+def CSR_fair_weekend_schedule(week_requires: List[List[int]], shifts: List[List[int]] = SHIFTS,  minimum_day_off: int = MINIMUM_DAY_OFF) -> Tuple[int, List[int], List[List[int]]]:
     # number of csr required in week
-    num_csr, _, week_schedule = CSR_required_week(week_requires)
+    num_csr, num_csr_each_day, week_schedule, _, _ = CSR_required_week(week_requires)
     num_workday = len(week_requires)
     num_shifts = len(SHIFTS)
 
+    start = time()
+    start_cpu = process_time()
     # Create the optimization model
     model = LpProblem('CSR_Fair_weekend_Scheduling', LpMinimize)
 
@@ -33,14 +40,14 @@ def CSR_schedule(week_requires: List[List[int]], shifts: List[List[int]]) -> Tup
     # (8)
     for i in range(num_csr):
         sum_ij = lpSum(x[(i,j,k)] for k in range(1, num_shifts) for j in range(num_workday))
-        model += sum_ij <= num_workday - MINIMUM_DAY_OFF
+        model += sum_ij <= num_workday - minimum_day_off
 
     # (9)
     for j in range(num_workday):
-        num_time_period = len(REQUIRES[j])
+        num_time_period = len(week_requires[j])
         for t in range(num_time_period):
-            sum_ik = lpSum(x[(i,j,k)] * SHIFTS[k][t] for i in range(num_csr) for k in range(num_shifts))
-            model += sum_ik >= REQUIRES[j][t]
+            sum_ik = lpSum(x[(i,j,k)] * shifts[k][t] for i in range(num_csr) for k in range(num_shifts))
+            model += sum_ik >= week_requires[j][t]
 
     # (10)
     ncks = [0] * num_shifts
@@ -60,38 +67,35 @@ def CSR_schedule(week_requires: List[List[int]], shifts: List[List[int]]) -> Tup
         for shift in day:
             if shift != 0:
                 num_work_weekend += 1
-
+    
     for i in range(num_csr):
         sum_j = lpSum(x[i,j,k] for j in [5,6] for k in range(1, num_shifts))
         model += math.floor(num_work_weekend / num_csr) <= sum_j
         model += sum_j <= math.ceil(num_work_weekend / num_csr)
 
-    start = time()
     model.solve(PULP_CBC_CMD(msg=False))
+    end_cpu = process_time()
     end = time()
 
-    if model.status == LpStatusOptimal:
-        print(f"Optimal solution found in {round(end - start, 2)} s")
-    elif model.status == LpStatusInfeasible:
-        raise Exception("Problem is infeasible")
-    else:
-        raise Exception("Problem status: ", LpStatus[model.status])
+    if model.status != LpStatusOptimal:
+        raise Infeasible()
 
-    schedule = [[0] * num_csr for i in range(7)]
+
+    week_schedule = [[0] * num_csr for i in range(7)]
     for j in range(num_workday):
         for i in range(num_csr):
             for k in range(num_shifts):
                 value = x[(i,j,k)].value()
                 if value == 1:
-                    schedule[j][i] = k
-    schedule = check_maximum_onboard_day_constraint(schedule)
-    schedule = check_requires_constraint_all_day(schedule, week_requires, shifts)
-    schedule = check_fair_scheduling(schedule)
-    schedule = check_fair_weekend_scheduling(schedule)
-    return schedule
+                    week_schedule[j][i] = k
+    week_schedule = check_maximum_onboard_day_constraint(week_schedule)
+    week_schedule = check_requires_constraint_all_day(week_schedule, week_requires, shifts)
+    week_schedule = check_fair_scheduling(week_schedule, shifts)
+    week_schedule = check_fair_weekend_scheduling(week_schedule)
+    return num_csr, num_csr_each_day, week_schedule, round(end - start, 2), round(end_cpu - start_cpu, 2)
 
 if __name__ == '__main__':
-    week_schedule = CSR_schedule(REQUIRES)
+    num_csr, num_csr_each_day, week_schedule, _, _ = CSR_fair_weekend_schedule(REQUIRES)
     week_schedule = add_pad_schedule(week_schedule)
     for day, day_schedule in zip(WEEK, week_schedule):
         print(f"{day}, schedule: {day_schedule}")

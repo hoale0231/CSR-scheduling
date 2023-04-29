@@ -102,3 +102,6 @@ def check_fair_weekend_scheduling(week_schedule: List[List[int]]):
         raise Exception(f"weekend not fair, max={weekend_max} min={weekend_min}\nSchedule:\n{str_week_schedule}FAIL!!")
 
     return week_schedule
+
+class Infeasible(Exception):
+    pass
