@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import *
 import tkinter.scrolledtext as tkscrolled
-import time
+import time, random
 from utils import add_pad_schedule, check_requires_constraint_all_day
 from pulp_solve.q1 import CSR_required_each_day as q1
 from pulp_solve.q2 import CSR_required_week as q2
@@ -163,7 +163,20 @@ def solve():
     output_text.config(state="disabled")
 
 
+title_min_random_input = tk.Label(ws, text="Min", font=('Helvetica', 10)).place(x=670, y=255)
+min_random_input = tk.Entry(ws, width=10, justify="center")
+min_random_input.place(x=700, y=250)
+min_random_input.insert(0, "5")
+title_max_random_input = tk.Label(ws, text="Max", font=('Helvetica', 10)).place(x=670, y=285)
+max_random_input = tk.Entry(ws, width=10, justify="center")
+max_random_input.place(x=700, y=280)
+max_random_input.insert(0, "10")
 
+def random_input():
+    random_requires = [[str(random.randint(int(min_random_input.get()), int(max_random_input.get()))) for _ in range(13)] for _ in range(7)]
+    random_requires = '\n'.join([' '.join(row) for row in random_requires])
+    input_text1.delete('1.0', tk.END)
+    input_text1.insert(tk.END, random_requires)
 
 def process_input(input):
     lines = input.split("\n")
@@ -184,7 +197,8 @@ def process_output(output):
 btn = tk.Button(ws, text='Solve', command=solve)
 btn.grid(row=4, column=3, padx=5, pady=5)
 
-
+random_btn = tk.Button(ws, text='Random', command=random_input)
+random_btn.grid(row=2, column=3, padx=5, pady=5)
 
 
 ws.mainloop()
