@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import *
 import tkinter.scrolledtext as tkscrolled
 import time
-from utils import add_pad_schedule, check_requires_constraint_all_day
+from utils import add_pad_schedule
 from pulp_solve.q1 import CSR_required_each_day as q1
 from pulp_solve.q2 import CSR_required_week as q2
 from pulp_solve.q3 import CSR_required_week as q3
@@ -114,50 +114,50 @@ def solve():
         if listbox.get(listbox.curselection()) == "Question 1":
             t1 = time.time()
             num_csr_each_day, week_schedule = q1(requires, shifts)
+            time_executed = time.time() - t1
             minimum_csr = max(num_csr_each_day)
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
             return_day_schedule = process_output(week_schedule)
             output_text.insert(tk.END, return_day_schedule)
             output_text2.insert(tk.END, return_num_csr_each_day)
-            time_executed = time.time() - t1
             output_text3.insert(0, minimum_csr)
             output_text1.insert(0, time_executed)
 
         if listbox.get(listbox.curselection()) == "Question 2":
             t1 = time.time()
             minimum_csr, num_csr_each_day, week_schedule = q2(requires, shifts, minimum_gap)
+            time_executed = time.time() - t1
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
             return_day_schedule = process_output(week_schedule)
             output_text.insert(tk.END, return_day_schedule)
             output_text2.insert(tk.END, return_num_csr_each_day)
-            time_executed = time.time() - t1
             output_text3.insert(0, minimum_csr)
             output_text1.insert(0, time_executed)
 
         if listbox.get(listbox.curselection()) == "Question 3":
             t1 = time.time()
             minimum_csr, num_csr_each_day, week_schedule = q3(requires, shifts, minimum_gap)
+            time_executed = time.time() - t1
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
             return_day_schedule = process_output(week_schedule)
             output_text.insert(tk.END, return_day_schedule)
             output_text2.insert(tk.END, return_num_csr_each_day)
             output_text3.insert(0, minimum_csr)
-            time_executed = time.time() - t1
             output_text1.insert(0, time_executed)
 
         if listbox.get(listbox.curselection()) == "Question 4":
             t1 = time.time()
             minimum_csr, num_csr_each_day, week_schedule = q4(requires, shifts, minimum_gap)
+            time_executed = time.time() - t1
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
             return_day_schedule = process_output(week_schedule)
             output_text.insert(tk.END, return_day_schedule)
             output_text2.insert(tk.END, return_num_csr_each_day)
             output_text3.insert(0, minimum_csr)
-            time_executed = time.time() - t1
             output_text1.insert(0, time_executed)
 
     output_text.config(state="disabled")
