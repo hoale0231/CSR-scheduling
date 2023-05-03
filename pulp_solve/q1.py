@@ -5,12 +5,10 @@ sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from pulp import *
 from typing import List, Tuple
-from time import time, process_time
+from time import time
 
-from utils import add_pad_schedule, check_requires_constraint_all_day
-from data import REQUIRES, SHIFTS, WEEK
-
-
+from utils import *
+from data import *
 
 def schedule_one_day(requires_day: List[int], shifts: List[List[int]]) -> List[int]:
     """
@@ -58,29 +56,17 @@ def CSR_required_each_day(week_requires: List[List[int]], shifts: List[List[int]
     """
     # cplex solution
     start = time()
-    start_cpu = process_time()
     week_schedule = [
         schedule_one_day(requires, shifts) for requires in week_requires
     ]
-    end_cpu = process_time()
     end = time()
-    # Sample solution
-    # week_schedule = [
-    #     [1, 1, 1, 2, 2, 2, 3, 3, 3, 6, 6, 6],
-    #     [1, 1, 1, 2, 2, 2, 3, 3, 3, 6, 6, 6, 6],
-    #     [1, 1, 1, 1, 2, 2, 3, 5, 5, 6, 6, 6],
-    #     [1, 1, 1, 1, 2, 2, 2, 3, 3, 5, 5, 6, 6],
-    #     [1, 1, 1, 2, 3, 3, 4, 6, 6, 6],
-    #     [1, 1, 1, 2, 2, 2, 3, 5, 5, 6, 6, 6],
-    #     [1, 1, 2, 2, 3, 3, 5, 5, 6, 6, 6]
-    # ]
 
     num_csr_each_day = [len(day_schedule) for day_schedule in week_schedule]
     week_schedule = check_requires_constraint_all_day(week_schedule, week_requires, shifts)
-    return num_csr_each_day, week_schedule, round(end - start, 2), round(end_cpu - start_cpu, 2)
+    return num_csr_each_day, week_schedule, round(end - start, 2)
 
 if __name__ == '__main__':
-    num_csr_each_day, week_schedule, _, _ = CSR_required_each_day(REQUIRES)
+    num_csr_each_day, week_schedule, runtime = CSR_required_each_day(REQUIRES)
     week_schedule = add_pad_schedule(week_schedule)
     for day, n_csr, day_schedule in zip(WEEK, num_csr_each_day, week_schedule):
         print(f"{day} need {n_csr}, schedule: {day_schedule}")

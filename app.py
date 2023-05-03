@@ -109,7 +109,7 @@ def solve():
     shifts = process_input(input2)
     if listbox2.get(listbox2.curselection()) == "PulP":
         if listbox.get(listbox.curselection()) == "Question 1":
-            num_csr_each_day, week_schedule, time_executed, cpu_time = q1(requires, shifts)
+            num_csr_each_day, week_schedule, time_executed = q1(requires, shifts)
             minimum_csr = max(num_csr_each_day)
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
@@ -120,7 +120,7 @@ def solve():
             output_text1.insert(0, time_executed)
 
         if listbox.get(listbox.curselection()) == "Question 2":
-            minimum_csr, num_csr_each_day, week_schedule, time_executed, cpu_time = q2(requires, shifts, minimum_gap)
+            minimum_csr, num_csr_each_day, week_schedule, time_executed = q2(requires, shifts, minimum_gap)
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
             return_day_schedule = process_output(week_schedule)
@@ -130,7 +130,7 @@ def solve():
             output_text1.insert(0, time_executed)
 
         if listbox.get(listbox.curselection()) == "Question 3":
-            minimum_csr, num_csr_each_day, week_schedule, time_executed, cpu_time = q3(requires, shifts, minimum_gap)
+            minimum_csr, num_csr_each_day, week_schedule, time_executed = q3(requires, shifts, minimum_gap)
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
             return_day_schedule = process_output(week_schedule)
@@ -140,7 +140,7 @@ def solve():
             output_text1.insert(0, time_executed)
 
         if listbox.get(listbox.curselection()) == "Question 4":
-            minimum_csr, num_csr_each_day, week_schedule, time_executed, cpu_time = q4(requires, shifts, minimum_gap)
+            minimum_csr, num_csr_each_day, week_schedule, time_executed = q4(requires, shifts, minimum_gap)
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
             return_day_schedule = process_output(week_schedule)

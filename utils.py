@@ -103,5 +103,12 @@ def check_fair_weekend_scheduling(week_schedule: List[List[int]]):
 
     return week_schedule
 
+def read_requires(file_name: str):
+    requires = open(file_name).read().splitlines()
+    return [
+        [int(i) for i in line.split()]
+        for line in requires
+    ]
+
 class Infeasible(Exception):
     pass

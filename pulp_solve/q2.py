@@ -4,7 +4,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from typing import List, Tuple
-from time import time, process_time
+from time import time
 from pulp_solve.q1 import CSR_required_each_day
 from data import REQUIRES, WEEK, MINIMUM_DAY_OFF, SHIFTS
 from utils import check_requires_constraint_all_day, check_maximum_onboard_day_constraint, add_pad_schedule
@@ -19,12 +19,11 @@ def CSR_required_week(week_requires: List[List[int]], shifts: List[List[int]] = 
         num_csr_each_day: [int] * 7
         week_schedule: list of day_schedule
     """
-    num_csr_each_day, week_schedule, _, _ = CSR_required_each_day(week_requires, shifts) # nc, week_schedule = [nc_1, nc_2, ..., nc_J], week_schedule
+    num_csr_each_day, week_schedule, _ = CSR_required_each_day(week_requires, shifts) # nc, week_schedule = [nc_1, nc_2, ..., nc_J], week_schedule
     num_csr = max([len(day) for day in week_schedule]) # I = max(nc_j)
     num_empty_slot = len(week_schedule) * num_csr - sum(num_csr_each_day) # ne = nd * max(nc_j) - sum(nc_j)
 
     start = time()
-    start_cpu = process_time()
     # While we increase num_csr by 1, ne increse 7 => we just increase until ne > num_scr
     while num_empty_slot < num_csr * minimum_day_off:
         num_csr += 1
@@ -55,16 +54,14 @@ def CSR_required_week(week_requires: List[List[int]], shifts: List[List[int]] = 
         day_schedule = [0] * n_empty_slot_day + day_schedule
         week_schedule[day] = day_schedule[-idx_csr:] + day_schedule[:-idx_csr]
         idx_csr = (idx_csr + n_empty_slot_day) % num_csr
-    end_cpu = process_time()
     end = time()
     week_schedule = check_maximum_onboard_day_constraint(week_schedule)
     week_schedule = check_requires_constraint_all_day(week_schedule, week_requires, shifts)
-    return num_csr, num_csr_each_day, week_schedule, round(end - start, 2), round(end_cpu - start_cpu, 2)
+    return num_csr, num_csr_each_day, week_schedule, round(end - start, 2)
 
 if __name__ == '__main__':
-    minimum_csr, num_csr_each_day, week_schedule, _ , _ = CSR_required_week(REQUIRES, SHIFTS, MINIMUM_DAY_OFF)
+    minimum_csr, num_csr_each_day, week_schedule, _  = CSR_required_week(REQUIRES, SHIFTS, MINIMUM_DAY_OFF)
     week_schedule = add_pad_schedule(week_schedule)
-
     print("Minimum CSR in a week:", minimum_csr)
     for day, n_csr, day_schedule in zip(WEEK, num_csr_each_day, week_schedule):
         print(f"{day} need {n_csr}, schedule: {day_schedule}")

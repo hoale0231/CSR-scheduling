@@ -42,19 +42,22 @@ def CSR_fair_weekend_schedule(week_requires: List[List[int]], shifts: List[List[
         sum_ij = lpSum(x[(i,j,k)] for k in range(1, num_shifts) for j in range(num_workday))
         model += sum_ij <= num_workday - minimum_day_off
 
-    # (9)
-    for j in range(num_workday):
-        num_time_period = len(week_requires[j])
-        for t in range(num_time_period):
-            sum_ik = lpSum(x[(i,j,k)] * shifts[k][t] for i in range(num_csr) for k in range(num_shifts))
-            model += sum_ik >= week_requires[j][t]
-
-    # (10)
+    # (9):  thay ràng buộc CSR phải đáp ứng đủ số lượng yêu cầu tại mỗi khung thời gian trong một ngày
+    #       bằng ràng buộc các shift trong 1 ngày phải trùng với Q1 
+    #       (vì Q1 đã thỏa điều kiện đủ KPI nên Q3 chỉ cần sắp xếp lại lịch cho thỏa các ràng buộc khác là được)
+    count_shift_each_day = [dict() for _ in range(num_workday)]
     num_csr_each_shift = [0] * num_shifts
-    for day in week_schedule:
+    for j, day in enumerate(week_schedule):
         for shift in day:
             num_csr_each_shift[shift] += 1
+            count_shift_each_day[j][shift] = count_shift_each_day[j].get(shift, 0) + 1
+    
+    for j, count_shift_day in enumerate(count_shift_each_day):
+        for k, count_k in count_shift_day.items():
+            sum_i = lpSum(x[(i,j,k)] for i in range(num_csr))
+            model += sum_i == count_k
 
+    # (10)
     for k in range(num_shifts):
         for i in range(num_csr):
             sum_j = lpSum(x[(i,j,k)] for j in range(num_workday))
@@ -93,7 +96,7 @@ def CSR_fair_weekend_schedule(week_requires: List[List[int]], shifts: List[List[
     return num_csr, num_csr_each_day, week_schedule, round(end - start, 2)
 
 if __name__ == '__main__':
-    num_csr, num_csr_each_day, week_schedule, runtime = CSR_fair_weekend_schedule(REQUIRES)
+    num_csr, num_csr_each_day, week_schedule, _, _ = CSR_fair_weekend_schedule(REQUIRES)
     week_schedule = add_pad_schedule(week_schedule)
     for day, day_schedule in zip(WEEK, week_schedule):
         print(f"{day}, schedule: {day_schedule}")
