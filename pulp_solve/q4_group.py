@@ -172,8 +172,6 @@ def CSR_fair_weekend_schedule(week_requires: List[List[int]], shifts: List[List[
     num_workday = len(week_requires)
     
     if n_split == -1:
-        # n_split = num_csr // 1000 + 1 # Keep num csr each group less than 1000 for fast scheduling
-        # n_split = min(n_split, 10) # Keep num group less than 10 for fast group scheduling
         n_split = int(math.sqrt(num_csr))
     
     # Split csr to group

@@ -148,10 +148,8 @@ def CSR_fair_schedule(week_requires: List[List[int]], shifts: List[List[int]] = 
     
     num_workday = len(week_requires)
     if n_split == -1:
-        # n_split = num_csr // 1000 + 1 # Keep num csr each group less than 1000 for fast scheduling
-        # n_split = min(n_split, 10) # Keep num group less than 10 for fast group scheduling
         n_split = int(math.sqrt(num_csr))
-        n_split = num_csr // 10 
+
     # Split csr to group
     lb_csr = num_csr // n_split
     ub_csr = lb_csr + 1
@@ -161,7 +159,7 @@ def CSR_fair_schedule(week_requires: List[List[int]], shifts: List[List[int]] = 
     
     # Split shift to group
     splited_schedule = group_CSR_schedule(csr_each_group, week_schedule, week_requires, shifts, minimum_day_off)
-    print(splited_schedule)
+
     # Schedule each group
     splited_schedule = [
         CSR_schedule_split(n_csr, split, shifts, minimum_day_off) 
@@ -180,7 +178,7 @@ def CSR_fair_schedule(week_requires: List[List[int]], shifts: List[List[int]] = 
     return num_csr, num_csr_each_day, week_schedule, round(end - start, 2)
 
 if __name__ == '__main__':
-    num_csr, num_csr_each_day, week_schedule, run_time = CSR_fair_schedule(REQUIRES)
+    num_csr, num_csr_each_day, week_schedule, run_time = CSR_fair_schedule(read_requires('test.in'))
     week_schedule = add_pad_schedule(week_schedule)
 
     for day, day_schedule in zip(WEEK, week_schedule):
