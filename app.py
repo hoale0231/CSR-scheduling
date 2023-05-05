@@ -1,12 +1,18 @@
 import tkinter as tk
 from tkinter import *
+import tkinter.messagebox
 import tkinter.scrolledtext as tkscrolled
 from utils import add_pad_schedule
 import random
 from pulp_solve.q1 import CSR_required_each_day as q1
 from pulp_solve.q2 import CSR_required_week as q2
 from pulp_solve.q3 import CSR_fair_schedule as q3
+from pulp_solve.q3_replace import CSR_fair_schedule as q3_replace
+from pulp_solve.q3_group import CSR_fair_schedule as q3_group
 from pulp_solve.q4 import CSR_fair_weekend_schedule as q4
+from pulp_solve.q4_replace import CSR_fair_weekend_schedule as q4_replace
+from pulp_solve.q4_group import CSR_fair_weekend_schedule as q4_group
+from utils import Infeasible
 
 ws = tk.Tk()
 ws.title("CSR Scheduler")
@@ -34,11 +40,15 @@ input_text2.grid(row=1, column=3, padx=5, pady=5, columnspan=2)
 # listbox3.grid(row=3, column=0, padx=5, pady=5)
 
 
-listbox = tk.Listbox(ws, width=20, height=4, exportselection=0)
+listbox = tk.Listbox(ws, width=20, height=8, exportselection=0)
 listbox.insert(1, "Question 1")
 listbox.insert(2, "Question 2")
 listbox.insert(3, "Question 3")
-listbox.insert(4, "Question 4")
+listbox.insert(4, "Question 3: Group")
+listbox.insert(5, "Question 3: Replace")
+listbox.insert(6, "Question 4")
+listbox.insert(7, "Question 4: Group")
+listbox.insert(8, "Question 4: Replace")
 listbox.select_set(0)
 
 
@@ -54,7 +64,7 @@ listbox2 = tk.Listbox(ws, width=20, height=1, exportselection=0)
 listbox2.insert(1, "PulP")
 listbox2.select_set(0)
 
-listbox.grid(row=3, column=2, padx=5, pady=5, rowspan=2)
+listbox.grid(row=3, column=2, padx=5, pady=5, rowspan=4)
 listbox2.grid(row=3, column=3, padx=5, pady=5)
 
 
@@ -86,7 +96,7 @@ title6 = tk.Label(ws, text="Mon\nTue\nWed\nThu\nFri\nSat\nSun", font=('Helvetica
 output_text2 = tk.Text(ws, height=7, width=15)
 output_text2.grid(row=9, column=1, padx=5, pady=5)
 
-title8 = tk.Label(ws, text="Minimum number of crs", font=('Helvetica', 10)).grid(row=8, column=2)
+title8 = tk.Label(ws, text="Minimum number of CSR", font=('Helvetica', 10)).grid(row=8, column=2)
 output_text3 = tk.Entry(ws, width=20)
 output_text3.grid(row=8, column=3, padx=5, pady=5)
 
@@ -107,6 +117,15 @@ def solve():
     minimum_gap = int(input_text3.get())
     requires = process_input(input1)
     shifts = process_input(input2)
+    check_shifts_result = check_shifts(shifts)
+    if not check_shifts_result:
+        tkinter.messagebox.showerror(title="Input Error", message="Shifts Error")
+        return
+    shifts = check_shifts_result[1]
+    input_text2.delete('1.0', tk.END)
+    input_text2.insert(tk.END, process_output(shifts))
+    # print("require", requires)
+    # print("shifts", shifts)
     if listbox2.get(listbox2.curselection()) == "PulP":
         if listbox.get(listbox.curselection()) == "Question 1":
             num_csr_each_day, week_schedule, time_executed = q1(requires, shifts)
@@ -130,7 +149,39 @@ def solve():
             output_text1.insert(0, time_executed)
 
         if listbox.get(listbox.curselection()) == "Question 3":
-            minimum_csr, num_csr_each_day, week_schedule, time_executed = q3(requires, shifts, minimum_gap)
+            try:
+                minimum_csr, num_csr_each_day, week_schedule, time_executed = q3(requires, shifts, minimum_gap)
+            except Infeasible:
+                tkinter.messagebox.showerror(title="Input Error", message="Infeasible")
+                return
+            week_schedule = add_pad_schedule(week_schedule)
+            return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
+            return_day_schedule = process_output(week_schedule)
+            output_text.insert(tk.END, return_day_schedule)
+            output_text2.insert(tk.END, return_num_csr_each_day)
+            output_text3.insert(0, minimum_csr)
+            output_text1.insert(0, time_executed)
+
+        if listbox.get(listbox.curselection()) == "Question 3: Replace":
+            try:
+                minimum_csr, num_csr_each_day, week_schedule, time_executed = q3_replace(requires, shifts, minimum_gap)
+            except Infeasible:
+                tkinter.messagebox.showerror(title="Input Error", message="Infeasible")
+                return
+            week_schedule = add_pad_schedule(week_schedule)
+            return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
+            return_day_schedule = process_output(week_schedule)
+            output_text.insert(tk.END, return_day_schedule)
+            output_text2.insert(tk.END, return_num_csr_each_day)
+            output_text3.insert(0, minimum_csr)
+            output_text1.insert(0, time_executed)
+
+        if listbox.get(listbox.curselection()) == "Question 3: Group":
+            try:
+                minimum_csr, num_csr_each_day, week_schedule, time_executed = q3_group(requires, shifts, minimum_gap)
+            except Infeasible:
+                tkinter.messagebox.showerror(title="Input Error", message="Infeasible")
+                return
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
             return_day_schedule = process_output(week_schedule)
@@ -140,7 +191,39 @@ def solve():
             output_text1.insert(0, time_executed)
 
         if listbox.get(listbox.curselection()) == "Question 4":
-            minimum_csr, num_csr_each_day, week_schedule, time_executed = q4(requires, shifts, minimum_gap)
+            try:
+                minimum_csr, num_csr_each_day, week_schedule, time_executed = q4(requires, shifts, minimum_gap)
+            except Infeasible:
+                tkinter.messagebox.showerror(title="Input Error", message="Infeasible")
+                return
+            week_schedule = add_pad_schedule(week_schedule)
+            return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
+            return_day_schedule = process_output(week_schedule)
+            output_text.insert(tk.END, return_day_schedule)
+            output_text2.insert(tk.END, return_num_csr_each_day)
+            output_text3.insert(0, minimum_csr)
+            output_text1.insert(0, time_executed)
+
+        if listbox.get(listbox.curselection()) == "Question 4: Replace":
+            try:
+                minimum_csr, num_csr_each_day, week_schedule, time_executed = q4_replace(requires, shifts, minimum_gap)
+            except Infeasible:
+                tkinter.messagebox.showerror(title="Input Error", message="Infeasible")
+                return
+            week_schedule = add_pad_schedule(week_schedule)
+            return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
+            return_day_schedule = process_output(week_schedule)
+            output_text.insert(tk.END, return_day_schedule)
+            output_text2.insert(tk.END, return_num_csr_each_day)
+            output_text3.insert(0, minimum_csr)
+            output_text1.insert(0, time_executed)
+
+        if listbox.get(listbox.curselection()) == "Question 4: Group":
+            try:
+                minimum_csr, num_csr_each_day, week_schedule, time_executed = q4_group(requires, shifts, minimum_gap)
+            except Infeasible:
+                tkinter.messagebox.showerror(title="Input Error", message="Infeasible")
+                return
             week_schedule = add_pad_schedule(week_schedule)
             return_num_csr_each_day = '\n'.join(map(str, num_csr_each_day))
             return_day_schedule = process_output(week_schedule)
@@ -184,6 +267,26 @@ def process_output(output):
         res += [" ".join(str(v) for v in line)]
     res = '\n'.join(res)
     return res
+
+
+def check_shifts(shifts):
+    if shifts == [[]]:
+        return False
+    have_day_off = False
+    day_off_shift = [0] * len(shifts[0])
+    for shift in shifts:
+        if max(shift) > 1:
+            return False
+        if min(shift) < 0:
+            return False
+        if sum(shift) == 0:
+            if have_day_off:
+                return False
+            have_day_off = True
+            shifts.pop(shifts.index(shift))
+    shifts.insert(0, day_off_shift)
+    return True, shifts
+
 
 btn = tk.Button(ws, text='Solve', command=solve)
 btn.grid(row=3, column=4, padx=5, pady=5)

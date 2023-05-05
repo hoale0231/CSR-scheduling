@@ -2,3 +2,4 @@ cplex
 docplex
 PuLP
 tk
+tqdm
