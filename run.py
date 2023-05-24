@@ -26,13 +26,13 @@ def limit_memory(maxsize):
 def random_requires(min, max):
     return [[random.randint(min, max) for _ in range(13)] for _ in range(7)]
 
-@timeout_decorator.timeout(10 * 60, timeout_exception=TimeOut)
+@timeout_decorator.timeout(200, timeout_exception=TimeOut)
 def run(requires, func):
     return func(requires)
      
 if __name__ == '__main__':
-    list_func = [q3_group, q4_group]
-    list_func_name = ['q3_group', 'q4_group']
+    list_func = [q1, q2, q3, q3_replace, q3_group, q4, q4_replace, q4_group]
+    list_func_name = ['q1', 'q2', 'q3', 'q3_replace', 'q3_group', 'q4', 'q4_replace', 'q4_group']
     min_max = [
         [0, 10],
         [10, 100],
@@ -40,9 +40,9 @@ if __name__ == '__main__':
         [1000, 5000],
         [5000, 10000],
     ]
-    with open('result_shift4.csv', 'w') as fw:
+    
+    with open('result_shift1.csv', 'w') as fw:
         print('min_max_n,func,n_csr,obj,runtime', file=fw)
-
     for min, max in min_max:
         for i in range(1, 4):
             for func, func_name in zip(list_func, list_func_name):
@@ -55,22 +55,30 @@ if __name__ == '__main__':
                     print(f"Running {min} {max} {i} {func.__name__}")
                     limit_memory(8 * (1024 ** 3))
                     output = run(requires, func)
+                    
+                    # Parse output Q1
                     if len(output) == 3:
-                        _, schedule, runtime = output
+                        num_csr_each_day, schedule, runtime = output
                         obj = np.sum(np.array(add_pad_schedule(schedule)) > 0)
-                        print(f"{min}_{max}_{i}", func_name, '', obj, runtime, sep=',', file=open('result_shift3.csv', 'a'))
+                        print(f"{min}_{max}_{i}", func_name, '', obj, runtime, sep=',', file=open('result_shift1.csv', 'a'))
+                    # Parse output Q2, Q3, Q4
                     elif len(output) == 4:
-                        num_csr, _, schedule, runtime = output
+                        num_csr, num_csr_each_day, schedule, runtime = output
                         obj = np.sum(np.array(schedule) > 0)
-                        print(f"{min}_{max}_{i}", func_name,num_csr, obj, runtime, sep=',', file=open('result_shift3.csv', 'a'))
+                        print(f"{min}_{max}_{i}", func_name,num_csr, obj, runtime, sep=',', file=open('result_shift1.csv', 'a'))
+                    
+                    # Print result
+                    with open(f'test_case/{min}_{max}_{i}_{func_name}_shift1.out', 'w') as fw:
+                        for day, n_csr, day_schedule in zip(WEEK, num_csr_each_day, schedule):
+                            print(f"{day} need {n_csr}, schedule: {day_schedule}", file=fw)
                 except MemoryError as me:
-                    print(f"{min}_{max}_{i}", func_name, '', '', 'memoryout', sep=',', file=open('result_shift3.csv', 'a'))
+                    print(f"{min}_{max}_{i}", func_name, '', '', 'memoryout', sep=',', file=open('result_shift1.csv', 'a'))
                 except TimeOut as te:
-                    print(f"{min}_{max}_{i}", func_name, '', '', 'timeout', sep=',', file=open('result_shift3.csv', 'a'))
+                    print(f"{min}_{max}_{i}", func_name, '', '', 'timeout', sep=',', file=open('result_shift1.csv', 'a'))
                 except Infeasible as ie:
-                    print(f"{min}_{max}_{i}", func_name, '', '', 'infeasible', sep=',', file=open('result_shift3.csv', 'a'))
+                    print(f"{min}_{max}_{i}", func_name, '', '', 'infeasible', sep=',', file=open('result_shift1.csv', 'a'))
                 except Exception as e:
-                    print(f"{min}_{max}_{i}", func_name, '', '', 'error', e, sep=',', file=open('result_shift3.csv', 'a'))
+                    print(f"{min}_{max}_{i}", func_name, '', '', 'error', e, sep=',', file=open('result_shift1.csv', 'a'))
                 for proc in psutil.process_iter():
                     if proc.name() == "cbc":
                         proc.kill()
